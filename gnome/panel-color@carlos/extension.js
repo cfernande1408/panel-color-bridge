@@ -14,6 +14,7 @@ export default class PanelColorExtension extends Extension {
         this._ffColor = null;
         this._inOverview = false;
         this._lastFocused = null;
+        this._savedStyles = new Map();
 
         const runtime = GLib.get_user_runtime_dir();
         const dir = GLib.build_filenamev([runtime, 'panel-color-bridge']);
@@ -52,6 +53,7 @@ export default class PanelColorExtension extends Extension {
         this._colorFile = null;
         this._colors = null;
         this._reset();
+        this._savedStyles = null;
     }
 
     _loadColors() {
@@ -144,17 +146,60 @@ export default class PanelColorExtension extends Extension {
             this._reset();
             return;
         }
-        Main.panel.set_style(
+        const light = isLight(rgb);
+
+        this._setStyle(Main.panel,
             `background-color: rgba(${rgb.join(', ')}, ${this._opacity}); ` +
             'transition-duration: 200ms;');
-        if (isLight(rgb))
-            Main.panel.add_style_class_name('pcb-light');
+        this._setLight(Main.panel, light);
+
+        // Menus are always opaque, whatever the panel opacity is
+        const bg = `rgb(${rgb.join(', ')})`;
+        for (const menu of this._menus()) {
+            this._setStyle(menu.box, `background-color: ${bg};`);
+            this._setStyle(menu.actor, `-arrow-background-color: ${bg};`);
+            menu.box.add_style_class_name('pcb-painted');
+            this._setLight(menu.box, light);
+        }
+    }
+
+    // Popup menus of every panel indicator (clock, quick settings,
+    // other extensions). Scanned each time so late indicators are covered.
+    _menus() {
+        const menus = new Set();
+        for (const indicator of Object.values(Main.panel.statusArea)) {
+            const menu = indicator?.menu;
+            if (menu?.box && menu.actor)
+                menus.add(menu);
+        }
+        return menus;
+    }
+
+    _setStyle(actor, style) {
+        if (!this._savedStyles.has(actor)) {
+            // Forget actors destroyed while painted (e.g. another
+            // extension removing its indicator)
+            const destroyId = actor.connect('destroy',
+                () => this._savedStyles.delete(actor));
+            this._savedStyles.set(actor, {style: actor.get_style(), destroyId});
+        }
+        actor.set_style(style);
+    }
+
+    _setLight(actor, light) {
+        if (light)
+            actor.add_style_class_name('pcb-light');
         else
-            Main.panel.remove_style_class_name('pcb-light');
+            actor.remove_style_class_name('pcb-light');
     }
 
     _reset() {
-        Main.panel.set_style(null);
-        Main.panel.remove_style_class_name('pcb-light');
+        for (const [actor, {style, destroyId}] of this._savedStyles) {
+            actor.disconnect(destroyId);
+            actor.set_style(style);
+            actor.remove_style_class_name('pcb-light');
+            actor.remove_style_class_name('pcb-painted');
+        }
+        this._savedStyles.clear();
     }
 }

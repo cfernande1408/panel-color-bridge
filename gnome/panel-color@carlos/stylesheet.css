@@ -8,3 +8,127 @@
 #panel.pcb-light .workspace-dot {
     background-color: #1b1b1b;
 }
+
+/* Popup menus: dark text on light backgrounds */
+.popup-menu-content.pcb-light,
+.popup-menu-content.pcb-light StLabel,
+.popup-menu-content.pcb-light StIcon {
+    color: #1b1b1b;
+}
+
+/* Subtle dark overlay for unchecked toggles and buttons */
+.popup-menu-content.pcb-light .quick-toggle,
+.popup-menu-content.pcb-light .icon-button,
+.popup-menu-content.pcb-light .button {
+    background-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Accent-coloured elements keep white text */
+.popup-menu-content.pcb-light .quick-toggle:checked,
+.popup-menu-content.pcb-light .quick-toggle:checked StLabel,
+.popup-menu-content.pcb-light .quick-toggle:checked StIcon,
+.popup-menu-content.pcb-light .calendar-today,
+.popup-menu-content.pcb-light .calendar-today StLabel {
+    color: #ffffff;
+}
+
+.popup-menu-content.pcb-light .quick-toggle:checked {
+    background-color: -st-accent-color;
+}
+
+/* Cards inside menus (calendar, notifications, events, clocks, weather):
+   translucent so the panel colour shows through */
+.popup-menu-content.pcb-painted .calendar,
+.popup-menu-content.pcb-painted .message,
+.popup-menu-content.pcb-painted .message-list-placeholder,
+.popup-menu-content.pcb-painted .events-button,
+.popup-menu-content.pcb-painted .world-clocks-button,
+.popup-menu-content.pcb-painted .weather-button {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.popup-menu-content.pcb-painted .message:hover,
+.popup-menu-content.pcb-painted .events-button:hover,
+.popup-menu-content.pcb-painted .world-clocks-button:hover,
+.popup-menu-content.pcb-painted .weather-button:hover {
+    background-color: rgba(255, 255, 255, 0.14);
+}
+
+.popup-menu-content.pcb-painted.pcb-light .calendar,
+.popup-menu-content.pcb-painted.pcb-light .message,
+.popup-menu-content.pcb-painted.pcb-light .message-list-placeholder,
+.popup-menu-content.pcb-painted.pcb-light .events-button,
+.popup-menu-content.pcb-painted.pcb-light .world-clocks-button,
+.popup-menu-content.pcb-painted.pcb-light .weather-button {
+    background-color: rgba(0, 0, 0, 0.06);
+}
+
+.popup-menu-content.pcb-painted.pcb-light .message:hover,
+.popup-menu-content.pcb-painted.pcb-light .events-button:hover,
+.popup-menu-content.pcb-painted.pcb-light .world-clocks-button:hover,
+.popup-menu-content.pcb-painted.pcb-light .weather-button:hover {
+    background-color: rgba(0, 0, 0, 0.12);
+}
+
+/* Calendar day buttons and month arrows */
+.popup-menu-content.pcb-painted .calendar-day,
+.popup-menu-content.pcb-painted .pager-button {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.popup-menu-content.pcb-painted .calendar-day:hover,
+.popup-menu-content.pcb-painted .calendar-day:selected,
+.popup-menu-content.pcb-painted .pager-button:hover {
+    background-color: rgba(255, 255, 255, 0.18);
+}
+
+.popup-menu-content.pcb-painted.pcb-light .calendar-day,
+.popup-menu-content.pcb-painted.pcb-light .pager-button {
+    background-color: rgba(0, 0, 0, 0.06);
+}
+
+.popup-menu-content.pcb-painted.pcb-light .calendar-day:hover,
+.popup-menu-content.pcb-painted.pcb-light .calendar-day:selected,
+.popup-menu-content.pcb-painted.pcb-light .pager-button:hover {
+    background-color: rgba(0, 0, 0, 0.14);
+}
+
+/* Today keeps the accent colour */
+.popup-menu-content.pcb-painted .calendar-day.calendar-today,
+.popup-menu-content.pcb-painted.pcb-light .calendar-day.calendar-today {
+    background-color: -st-accent-color;
+    color: #ffffff;
+}
+
+/* Month title and weekday headings */
+.popup-menu-content.pcb-painted .calendar-day-heading,
+.popup-menu-content.pcb-painted .calendar-month-label {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.popup-menu-content.pcb-painted.pcb-light .calendar-day-heading,
+.popup-menu-content.pcb-painted.pcb-light .calendar-month-label {
+    background-color: rgba(0, 0, 0, 0.06);
+}
+
+/* Calendar text: near-black on light colours */
+.popup-menu-content.pcb-light .calendar-day,
+.popup-menu-content.pcb-light .calendar-day StLabel,
+.popup-menu-content.pcb-light .calendar-day-heading,
+.popup-menu-content.pcb-light .calendar-day-heading StLabel,
+.popup-menu-content.pcb-light .calendar-month-label,
+.popup-menu-content.pcb-light .calendar-month-label StLabel {
+    color: #1b1b1b;
+}
+
+/* Days from other months stay dimmed */
+.popup-menu-content.pcb-light .calendar-day.calendar-other-month,
+.popup-menu-content.pcb-light .calendar-day.calendar-other-month StLabel {
+    color: rgba(27, 27, 27, 0.4);
+}
+
+/* Today: must come last to win over the rules above */
+.popup-menu-content.pcb-painted.pcb-light .calendar-day.calendar-today,
+.popup-menu-content.pcb-painted.pcb-light .calendar-day.calendar-today StLabel {
+    color: #ffffff;
+}
