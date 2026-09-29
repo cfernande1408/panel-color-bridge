@@ -1,0 +1,15 @@
+{
+  "manifest_version": 2,
+  "name": "Panel Color Bridge",
+  "version": "1.0",
+  "description": "Envía el color de la barra de pestañas a la barra superior de GNOME.",
+  "permissions": ["theme", "nativeMessaging"],
+  "background": { "scripts": ["background.js"] },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "panel-color-bridge@carlos",
+      "strict_min_version": "142.0",
+      "data_collection_permissions": { "required": ["none"] }
+    }
+  }
+}

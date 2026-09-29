@@ -1,0 +1,7 @@
+{
+  "uuid": "panel-color@carlos",
+  "name": "Panel Color",
+  "description": "Colorea la barra superior según la ventana enfocada (Firefox en tiempo real, resto por app).",
+  "shell-version": ["45", "46", "47", "48", "49", "50"],
+  "version": 1
+}

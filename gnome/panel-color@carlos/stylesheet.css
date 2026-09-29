@@ -1,0 +1,10 @@
+/* Texto e iconos oscuros cuando el color de fondo es claro */
+#panel.pcb-light .panel-button,
+#panel.pcb-light .panel-button .clock,
+#panel.pcb-light .panel-button StIcon {
+    color: #1b1b1b;
+}
+
+#panel.pcb-light .workspace-dot {
+    background-color: #1b1b1b;
+}
