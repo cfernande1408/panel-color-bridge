@@ -60,7 +60,7 @@ export default class PanelColorExtension extends Extension {
             const [, bytes] = GLib.file_get_contents(path);
             return JSON.parse(new TextDecoder().decode(bytes));
         } catch (e) {
-            console.warn(`panel-color: colors.json no válido: ${e.message}`);
+            console.warn(`panel-color: invalid colors.json: ${e.message}`);
             return {};
         }
     }
@@ -71,13 +71,13 @@ export default class PanelColorExtension extends Extension {
             return;
         file.load_contents_async(null, (f, res) => {
             if (!this._monitor)
-                return; // desactivada mientras leía
+                return; // disabled while reading
             let text = '';
             try {
                 const [, bytes] = f.load_contents_finish(res);
                 text = new TextDecoder().decode(bytes).trim();
             } catch {
-                // Aún no existe: Firefox no ha enviado nada
+                // Not created yet: Firefox has not sent anything
             }
             this._ffColor = text || null;
             this._update();
@@ -94,7 +94,7 @@ export default class PanelColorExtension extends Extension {
         const cls = win ? (win.get_wm_class() ?? '') : '';
         this._writeFocused(cls);
 
-        // Sin ventana activa: la barra vuelve a su estilo (o al de Blur my Shell)
+        // No active window: restore the stock style (or Blur my Shell's)
         if (!win) {
             this._reset();
             return;
@@ -127,8 +127,8 @@ export default class PanelColorExtension extends Extension {
         return win;
     }
 
-    // Deja la clase de la ventana enfocada en un archivo, para saber
-    // qué nombre poner en colors.json.
+    // Writes the focused window class to a file, so you know
+    // which name to use in colors.json.
     _writeFocused(cls) {
         if (cls === this._lastFocused)
             return;

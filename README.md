@@ -1,22 +1,65 @@
 # Panel Color Bridge
 
-La barra superior de GNOME toma el color de la ventana activa:
-Firefox en tiempo real (junto con Adaptive Tab Bar Colour) y el
-resto de apps con colores fijos. Sin ventana activa, la barra vuelve
-a su estilo normal (compatible con Blur my Shell).
+Makes the GNOME top panel match the active window, like the status bar
+on Android:
 
-## Piezas
+- **Firefox**: follows the tab bar colour in real time (works with
+  [Adaptive Tab Bar Colour](https://addons.mozilla.org/firefox/addon/adaptive-tab-bar-colour/)
+  or any theme).
+- **Other apps**: fixed colours per app, set in `colors.json`.
+- **No active window**: the panel goes back to its stock style, so it
+  works alongside Blur my Shell.
 
-- `gnome/`: extensión de GNOME Shell (probada en GNOME 50).
-- `firefox/`: extensión de Firefox que envía el color del tema.
-- `host/`: puente de native messaging entre Firefox y GNOME.
+Tested on Fedora 44 with GNOME 50.
 
-## Instalación
+## How it works
+
+Reading pixels from the screen is slow and causes stutter, so Firefox
+reports its colour directly instead:
+
+1. `firefox/` — a Firefox extension listens for theme changes and sends
+   the tab bar colour through native messaging.
+2. `host/` — a small Python script receives the colour and writes it to
+   `$XDG_RUNTIME_DIR/panel-color-bridge/color`.
+3. `gnome/` — a GNOME Shell extension watches that file and the focused
+   window, and paints the panel.
+
+## Installation
 
     ./install.sh
 
-Cierra sesión y vuelve a entrar, y después:
+Log out and back in, then:
 
     gnome-extensions enable panel-color@carlos
 
-Instala en Firefox la extensión firmada (`.xpi`).
+Firefox only installs signed extensions. Sign `firefox/` as an unlisted
+add-on with [web-ext](https://github.com/mozilla/web-ext):
+
+    cd firefox
+    npx web-ext sign --channel=unlisted \
+      --api-key=$WEB_EXT_API_KEY --api-secret=$WEB_EXT_API_SECRET
+
+Then install the `.xpi` from `web-ext-artifacts/` in Firefox.
+
+## Per-app colours
+
+Edit `~/.local/share/gnome-shell/extensions/panel-color@carlos/colors.json`:
+
+    {
+      "opacity": 1,
+      "default": null,
+      "org.gnome.Ptyxis": "#1e1e1e"
+    }
+
+To find an app's name, focus it and run:
+
+    cat $XDG_RUNTIME_DIR/panel-color-focused
+
+Reload after editing:
+
+    gnome-extensions disable panel-color@carlos
+    gnome-extensions enable panel-color@carlos
+
+## License
+
+GPL-2.0-or-later

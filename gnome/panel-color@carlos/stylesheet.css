@@ -1,4 +1,4 @@
-/* Texto e iconos oscuros cuando el color de fondo es claro */
+/* Dark text and icons when the background colour is light */
 #panel.pcb-light .panel-button,
 #panel.pcb-light .panel-button .clock,
 #panel.pcb-light .panel-button StIcon {

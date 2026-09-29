@@ -1,11 +1,11 @@
 #!/bin/bash
-# Instala el host nativo y la extensión de GNOME.
+# Installs the native host and the GNOME extension.
 set -e
 DIR="$(cd "$(dirname "$0")" && pwd)"
 UUID=panel-color@carlos
 EXT_DIR="$HOME/.local/share/gnome-shell/extensions/$UUID"
 
-echo "== Host nativo =="
+echo "== Native host =="
 mkdir -p "$HOME/.local/bin"
 install -m 755 "$DIR/host/panel-color-bridge.py" "$HOME/.local/bin/panel-color-bridge.py"
 
@@ -18,7 +18,7 @@ for d in "${hosts[@]}"; do
     echo "  $d/panel_color_bridge.json"
 done
 
-echo "== Extensión de GNOME =="
+echo "== GNOME extension =="
 backup=""
 if [ -f "$EXT_DIR/colors.json" ]; then
     backup=$(mktemp)
@@ -30,10 +30,10 @@ cp -r "$DIR/gnome/$UUID/." "$EXT_DIR/"
 if [ -n "$backup" ]; then
     cp "$backup" "$EXT_DIR/colors.json"
     rm -f "$backup"
-    echo "  Se ha conservado tu colors.json"
+    echo "  Kept your existing colors.json"
 fi
 echo "  $EXT_DIR"
 
 echo
-echo "Listo. Cierra sesión y vuelve a entrar, y luego:"
+echo "Done. Log out and back in, then run:"
 echo "  gnome-extensions enable $UUID"

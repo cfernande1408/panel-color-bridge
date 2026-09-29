@@ -1,7 +1,7 @@
 const COLOR_RE =
     /^(#[0-9a-f]{3,8}|rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*(,\s*[\d.]+\s*)?\))$/i;
 
-// Devuelve [r, g, b] o null si el texto no es un color válido.
+// Returns [r, g, b], or null if the string is not a valid colour.
 export function parseColor(str) {
     if (typeof str !== 'string')
         return null;
@@ -24,7 +24,7 @@ export function parseColor(str) {
     return n.slice(0, 3).map(Math.round);
 }
 
-// true si el fondo es claro y el texto debe ser oscuro.
+// true if the background is light and the text should be dark.
 export function isLight([r, g, b]) {
     const lin = v => {
         v /= 255;

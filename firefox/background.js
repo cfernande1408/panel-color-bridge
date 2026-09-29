@@ -1,5 +1,5 @@
-// Lee el color de la barra de pestañas (theme.colors.frame) de la ventana
-// enfocada y lo envía al host nativo, que se lo pasa a GNOME.
+// Reads the tab bar colour (theme.colors.frame) of the focused window
+// and sends it to the native host, which passes it on to GNOME.
 
 const HOST = 'panel_color_bridge';
 let port = null;
@@ -38,8 +38,8 @@ async function sendCurrent() {
   }
 }
 
-// Adaptive Tab Bar Colour cambia el tema un poco después de cargar la web,
-// así que se comprueba al momento y otra vez poco después.
+// Adaptive Tab Bar Colour updates the theme shortly after a page loads,
+// so check right away and once more a bit later.
 function schedule() {
   timers.forEach(clearTimeout);
   timers = [setTimeout(sendCurrent, 50), setTimeout(sendCurrent, 400)];

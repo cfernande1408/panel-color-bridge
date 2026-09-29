@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Host de native messaging: recibe el color desde Firefox y lo deja en
-$XDG_RUNTIME_DIR/panel-color-bridge/color para la extensión de GNOME."""
+"""Native messaging host: receives the colour from Firefox and writes it to
+$XDG_RUNTIME_DIR/panel-color-bridge/color for the GNOME extension."""
 import json
 import os
 import re
@@ -37,4 +37,4 @@ while True:
     color = str(msg.get('color') or '').strip()
     write(color if COLOR_RE.match(color) else '')
 
-write('')  # Firefox cerrado: la barra vuelve a su color normal
+write('')  # Firefox closed: the panel goes back to its normal colour

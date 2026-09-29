@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Panel Color Bridge",
   "version": "1.0",
-  "description": "Envía el color de la barra de pestañas a la barra superior de GNOME.",
+  "description": "Sends the tab bar colour to the GNOME top panel.",
   "permissions": ["theme", "nativeMessaging"],
   "background": { "scripts": ["background.js"] },
   "browser_specific_settings": {

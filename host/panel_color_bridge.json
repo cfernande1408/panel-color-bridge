@@ -1,6 +1,6 @@
 {
   "name": "panel_color_bridge",
-  "description": "Puente de color entre Firefox y la barra de GNOME",
+  "description": "Colour bridge between Firefox and the GNOME top panel",
   "path": "@PATH@",
   "type": "stdio",
   "allowed_extensions": ["panel-color-bridge@carlos"]
