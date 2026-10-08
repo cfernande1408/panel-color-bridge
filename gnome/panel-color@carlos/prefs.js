@@ -79,6 +79,13 @@ export default class PanelColorPreferences extends ExtensionPreferences {
         settings.bind('auto-detect', detect, 'active', Gio.SettingsBindFlags.DEFAULT);
         group.add(detect);
 
+        const maximized = new Adw.SwitchRow({
+            title: 'Only maximized windows',
+            subtitle: 'Follow the top maximized or tiled window, not floating ones',
+        });
+        settings.bind('maximized-only', maximized, 'active', Gio.SettingsBindFlags.DEFAULT);
+        group.add(maximized);
+
         // Empty default-color means "keep the stock panel"
         const current = settings.get_string('default-color');
         const other = new Adw.SwitchRow({

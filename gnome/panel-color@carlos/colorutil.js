@@ -61,3 +61,10 @@ export function dominantColor(samples) {
     }
     return best;
 }
+
+// Drops the points that fall inside any of the given rectangles
+// (windows stacked on top), so we never sample a window covering it.
+export function uncoveredPoints(points, rects) {
+    return points.filter(([px, py]) => !rects.some(({x, y, width, height}) =>
+        px >= x && px < x + width && py >= y && py < y + height));
+}
