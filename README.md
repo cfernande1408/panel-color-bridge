@@ -43,19 +43,16 @@ Then install the `.xpi` from `web-ext-artifacts/` in Firefox.
 
 ## Per-app colours
 
-Settings live in GSettings and apply immediately, no reload needed:
+Open the preferences:
 
-    S="--schemadir $HOME/.local/share/gnome-shell/extensions/panel-color@carlos/schemas"
-    gsettings $S set org.gnome.shell.extensions.panel-color app-colors \
-      "{'org.gnome.Ptyxis': '#1e1e1e', 'org.gnome.Nautilus': '#ebebed'}"
-    gsettings $S set org.gnome.shell.extensions.panel-color default-color ''
-    gsettings $S set org.gnome.shell.extensions.panel-color opacity 1.0
+    gnome-extensions prefs panel-color@carlos
 
-An empty `default-color` keeps the stock panel for apps not in the list.
+Add apps with the **+** button and pick a colour for each one. Changes
+apply immediately. **Paint other apps** sets one colour for every app
+not in the list; when it is off, those apps keep the stock panel.
 
-To find an app's name, focus it and run:
-
-    cat $XDG_RUNTIME_DIR/panel-color-focused
+Apps are matched by their desktop file name (e.g. `org.gnome.Terminal`),
+falling back to the window class.
 
 If you had a `colors.json` from an older version, `install.sh` moves
 it to GSettings for you.

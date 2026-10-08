@@ -1,5 +1,6 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import Shell from 'gi://Shell';
 
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -16,14 +17,12 @@ export default class PanelColorExtension extends Extension {
         });
         this._ffColor = null;
         this._inOverview = false;
-        this._lastFocused = null;
         this._savedStyles = new Map();
 
         const runtime = GLib.get_user_runtime_dir();
         const dir = GLib.build_filenamev([runtime, 'panel-color-bridge']);
         GLib.mkdir_with_parents(dir, 0o700);
         this._colorFile = Gio.File.new_for_path(GLib.build_filenamev([dir, 'color']));
-        this._focusedPath = GLib.build_filenamev([runtime, 'panel-color-focused']);
 
         this._monitor = Gio.File.new_for_path(dir)
             .monitor_directory(Gio.FileMonitorFlags.WATCH_MOVES, null);
@@ -64,7 +63,7 @@ export default class PanelColorExtension extends Extension {
     _loadSettings() {
         this._opacity = this._settings.get_double('opacity');
         this._defaultColor = this._settings.get_string('default-color');
-        // Lower-case keys so window class matching ignores case
+        // Lower-case keys so matching ignores case
         const map = this._settings.get_value('app-colors').deep_unpack();
         this._appColors = new Map(
             Object.entries(map).map(([k, v]) => [k.toLowerCase(), v]));
@@ -96,8 +95,6 @@ export default class PanelColorExtension extends Extension {
         }
 
         const win = this._activeWindow();
-        const cls = win ? (win.get_wm_class() ?? '') : '';
-        this._writeFocused(cls);
 
         // No active window: restore the stock style (or Blur my Shell's)
         if (!win) {
@@ -105,12 +102,28 @@ export default class PanelColorExtension extends Extension {
             return;
         }
 
-        if (cls.toLowerCase().includes('firefox') && this._ffColor) {
+        const names = this._windowNames(win);
+        if (this._ffColor && names.some(n => n.includes('firefox'))) {
             this._apply(this._ffColor);
             return;
         }
 
-        this._apply(this._appColors.get(cls.toLowerCase()) ?? this._defaultColor);
+        const match = names.find(n => this._appColors.has(n));
+        this._apply(match ? this._appColors.get(match) : this._defaultColor);
+    }
+
+    // Names a window can be matched by, lower-cased: its app id
+    // (desktop file name, what the preferences store) and its class.
+    _windowNames(win) {
+        const names = [];
+        const app = Shell.WindowTracker.get_default().get_window_app(win);
+        const id = app?.get_id();
+        if (id)
+            names.push(id.replace(/\.desktop$/, '').toLowerCase());
+        const cls = win.get_wm_class();
+        if (cls)
+            names.push(cls.toLowerCase());
+        return names;
     }
 
     _activeWindow() {
@@ -121,17 +134,6 @@ export default class PanelColorExtension extends Extension {
         if (!win.is_on_all_workspaces() && win.get_workspace() !== ws)
             return null;
         return win;
-    }
-
-    // Writes the focused window class to a file, so you know
-    // which name to use in colors.json.
-    _writeFocused(cls) {
-        if (cls === this._lastFocused)
-            return;
-        this._lastFocused = cls;
-        try {
-            GLib.file_set_contents(this._focusedPath, cls);
-        } catch {}
     }
 
     _apply(color) {
