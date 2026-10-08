@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.panel-color"
+          path="/org/gnome/shell/extensions/panel-color/">
+    <key name="opacity" type="d">
+      <range min="0" max="1"/>
+      <default>1.0</default>
+      <summary>Panel opacity</summary>
+      <description>Opacity of the panel background while it is painted (0 to 1). Menus are always opaque.</description>
+    </key>
+    <key name="default-color" type="s">
+      <default>''</default>
+      <summary>Fallback colour</summary>
+      <description>Colour for windows with no per-app colour. Empty keeps the stock panel.</description>
+    </key>
+    <key name="app-colors" type="a{ss}">
+      <default>{'org.gnome.Ptyxis': '#1e1e1e', 'org.gnome.Nautilus': '#ebebed'}</default>
+      <summary>Per-app colours</summary>
+      <description>Maps a window class to a CSS colour (#rrggbb or rgb()).</description>
+    </key>
+  </schema>
+</schemalist>
