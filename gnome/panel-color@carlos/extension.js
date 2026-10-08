@@ -1,11 +1,16 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import {parseColor, isLight} from './colorutil.js';
+import {parseColor, isLight, titleBarPoints, dominantColor, uncoveredPoints}
+    from './colorutil.js';
+
+// Wait for the focus/map animation to finish before reading pixels
+const DETECT_DELAY_MS = 200;
 
 export default class PanelColorExtension extends Extension {
     enable() {
@@ -18,6 +23,9 @@ export default class PanelColorExtension extends Extension {
         this._ffColor = null;
         this._inOverview = false;
         this._savedStyles = new Map();
+        this._detected = new WeakMap(); // window -> last detected colour
+        this._detectId = 0;
+        this._detectGen = 0;
 
         const runtime = GLib.get_user_runtime_dir();
         const dir = GLib.build_filenamev([runtime, 'panel-color-bridge']);
@@ -32,6 +40,10 @@ export default class PanelColorExtension extends Extension {
             () => this._update());
         this._wsId = global.workspace_manager.connect('active-workspace-changed',
             () => this._update());
+        // Which window touches the panel can change without a focus change
+        this._restackId = global.display.connect('restacked', () => this._update());
+        this._wmIds = ['size-changed', 'minimize', 'unminimize'].map(sig =>
+            global.window_manager.connect(sig, () => this._update()));
         this._ovShowId = Main.overview.connect('showing', () => {
             this._inOverview = true;
             this._update();
@@ -45,10 +57,14 @@ export default class PanelColorExtension extends Extension {
     }
 
     disable() {
+        this._cancelDetect();
+        this._detected = null;
         this._settings.disconnect(this._settingsId);
         this._settings = null;
         global.display.disconnect(this._focusId);
         global.workspace_manager.disconnect(this._wsId);
+        global.display.disconnect(this._restackId);
+        this._wmIds.forEach(id => global.window_manager.disconnect(id));
         Main.overview.disconnect(this._ovShowId);
         Main.overview.disconnect(this._ovHideId);
         this._monitor.disconnect(this._monitorId);
@@ -63,6 +79,8 @@ export default class PanelColorExtension extends Extension {
     _loadSettings() {
         this._opacity = this._settings.get_double('opacity');
         this._defaultColor = this._settings.get_string('default-color');
+        this._autoDetect = this._settings.get_boolean('auto-detect');
+        this._maximizedOnly = this._settings.get_boolean('maximized-only');
         // Lower-case keys so matching ignores case
         const map = this._settings.get_value('app-colors').deep_unpack();
         this._appColors = new Map(
@@ -89,14 +107,16 @@ export default class PanelColorExtension extends Extension {
     }
 
     _update() {
+        this._cancelDetect();
+
         if (this._inOverview) {
             this._reset();
             return;
         }
 
-        const win = this._activeWindow();
+        const win = this._targetWindow();
 
-        // No active window: restore the stock style (or Blur my Shell's)
+        // No window to follow: restore the stock style (or Blur my Shell's)
         if (!win) {
             this._reset();
             return;
@@ -109,7 +129,85 @@ export default class PanelColorExtension extends Extension {
         }
 
         const match = names.find(n => this._appColors.has(n));
-        this._apply(match ? this._appColors.get(match) : this._defaultColor);
+        if (match) {
+            this._apply(this._appColors.get(match));
+            return;
+        }
+
+        if (this._autoDetect) {
+            this._detect(win);
+            return;
+        }
+
+        this._apply(this._defaultColor);
+    }
+
+    // Shows the colour detected last time for this window right away,
+    // then samples its title bar again once animations have settled.
+    _detect(win) {
+        const cached = this._detected.get(win);
+        if (cached)
+            this._apply(cached);
+
+        const gen = this._detectGen;
+        this._detectId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, DETECT_DELAY_MS, () => {
+            this._detectId = 0;
+            this._sample(win, gen).catch(e =>
+                console.warn(`panel-color: colour detection failed: ${e.message}`));
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    async _sample(win, gen) {
+        // Skip points hidden by windows stacked above (e.g. a floating
+        // terminal over a maximized browser)
+        const stack = this._stack(false);
+        const index = stack.indexOf(win);
+        const above = index < 0 ? []
+            : stack.slice(index + 1).map(w => w.get_frame_rect());
+        const points = uncoveredPoints(titleBarPoints(win.get_frame_rect()), above);
+
+        const samples = [];
+        for (const [x, y] of points)
+            samples.push(await this._pickColor(x, y));
+
+        // Focus changed, settings changed or disabled while sampling
+        if (gen !== this._detectGen || !this._detected)
+            return;
+
+        const rgb = dominantColor(samples);
+        if (!rgb) {
+            // Covered or unreadable: keep what we had for it, if anything
+            this._apply(this._detected.get(win) ?? this._defaultColor);
+            return;
+        }
+        const color = `rgb(${rgb.join(', ')})`;
+        this._detected.set(win, color);
+        this._apply(color);
+    }
+
+    _pickColor(x, y) {
+        return new Promise(resolve => {
+            new Shell.Screenshot().pick_color(x, y, (shot, res) => {
+                try {
+                    // [ok, color] or [color] depending on the GJS version
+                    const c = [shot.pick_color_finish(res)].flat()
+                        .find(v => typeof v === 'object' && v && 'red' in v);
+                    resolve(c ? [c.red, c.green, c.blue] : null);
+                } catch {
+                    resolve(null); // e.g. point off screen
+                }
+            });
+        });
+    }
+
+    // Drops a pending detection and makes in-flight samples stale
+    _cancelDetect() {
+        if (this._detectId) {
+            GLib.source_remove(this._detectId);
+            this._detectId = 0;
+        }
+        this._detectGen++;
     }
 
     // Names a window can be matched by, lower-cased: its app id
@@ -124,6 +222,37 @@ export default class PanelColorExtension extends Extension {
         if (cls)
             names.push(cls.toLowerCase());
         return names;
+    }
+
+    // The window the panel follows: the focused one, or with
+    // maximized-only, the top window touching the panel.
+    _targetWindow() {
+        const focus = this._activeWindow();
+        if (!this._maximizedOnly)
+            return focus;
+        if (focus && this._touchesPanel(focus))
+            return focus;
+        return this._stack().reverse().find(w => this._touchesPanel(w)) ?? null;
+    }
+
+    // Maximized or tiled on the panel's monitor, flush with its top
+    _touchesPanel(win) {
+        const primary = Main.layoutManager.primaryIndex;
+        if (win.get_monitor() !== primary)
+            return false;
+        const area = Main.layoutManager.getWorkAreaForMonitor(primary);
+        return win.get_frame_rect().y <= area.y;
+    }
+
+    // Visible windows of the active workspace, bottom to top; only
+    // normal ones (no dialogs, menus, desktop icons) unless asked
+    _stack(normalOnly = true) {
+        const ws = global.workspace_manager.get_active_workspace();
+        return global.get_window_actors()
+            .map(a => a.get_meta_window())
+            .filter(w => w && !w.minimized &&
+                (!normalOnly || w.get_window_type() === Meta.WindowType.NORMAL) &&
+                (w.is_on_all_workspaces() || w.get_workspace() === ws));
     }
 
     _activeWindow() {

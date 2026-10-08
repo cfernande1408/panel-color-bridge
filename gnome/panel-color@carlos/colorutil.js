@@ -32,3 +32,39 @@ export function isLight([r, g, b]) {
     };
     return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b) > 0.179;
 }
+
+// Points just below the top edge of a window frame, where the title
+// bar or header bar is. Spread out to avoid the title and buttons.
+export function titleBarPoints({x, y, width, height}) {
+    const dy = Math.min(4, Math.floor(height / 2));
+    return [0.2, 0.35, 0.5, 0.65, 0.8]
+        .map(f => [Math.round(x + width * f), y + dy]);
+}
+
+// The colour seen at least twice among the samples (the most frequent
+// one, ties to the earliest), or null if they all differ, e.g. on a
+// gradient or an image.
+export function dominantColor(samples) {
+    const counts = new Map();
+    let best = null;
+    let bestCount = 1;
+    for (const rgb of samples) {
+        if (!rgb)
+            continue;
+        const key = rgb.join(',');
+        const n = (counts.get(key) ?? 0) + 1;
+        counts.set(key, n);
+        if (n > bestCount) {
+            best = rgb;
+            bestCount = n;
+        }
+    }
+    return best;
+}
+
+// Drops the points that fall inside any of the given rectangles
+// (windows stacked on top), so we never sample a window covering it.
+export function uncoveredPoints(points, rects) {
+    return points.filter(([px, py]) => !rects.some(({x, y, width, height}) =>
+        px >= x && px < x + width && py >= y && py < y + height));
+}
