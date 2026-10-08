@@ -8,6 +8,11 @@
       <summary>Panel opacity</summary>
       <description>Opacity of the panel background while it is painted (0 to 1). Menus are always opaque.</description>
     </key>
+    <key name="auto-detect" type="b">
+      <default>true</default>
+      <summary>Detect colours automatically</summary>
+      <description>Read the colour of the focused window's title bar. Apps in app-colors override it.</description>
+    </key>
     <key name="default-color" type="s">
       <default>''</default>
       <summary>Fallback colour</summary>

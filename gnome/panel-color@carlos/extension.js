@@ -5,7 +5,10 @@ import Shell from 'gi://Shell';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import {parseColor, isLight} from './colorutil.js';
+import {parseColor, isLight, titleBarPoints, dominantColor} from './colorutil.js';
+
+// Wait for the focus/map animation to finish before reading pixels
+const DETECT_DELAY_MS = 200;
 
 export default class PanelColorExtension extends Extension {
     enable() {
@@ -18,6 +21,9 @@ export default class PanelColorExtension extends Extension {
         this._ffColor = null;
         this._inOverview = false;
         this._savedStyles = new Map();
+        this._detected = new WeakMap(); // window -> last detected colour
+        this._detectId = 0;
+        this._detectGen = 0;
 
         const runtime = GLib.get_user_runtime_dir();
         const dir = GLib.build_filenamev([runtime, 'panel-color-bridge']);
@@ -45,6 +51,8 @@ export default class PanelColorExtension extends Extension {
     }
 
     disable() {
+        this._cancelDetect();
+        this._detected = null;
         this._settings.disconnect(this._settingsId);
         this._settings = null;
         global.display.disconnect(this._focusId);
@@ -63,6 +71,7 @@ export default class PanelColorExtension extends Extension {
     _loadSettings() {
         this._opacity = this._settings.get_double('opacity');
         this._defaultColor = this._settings.get_string('default-color');
+        this._autoDetect = this._settings.get_boolean('auto-detect');
         // Lower-case keys so matching ignores case
         const map = this._settings.get_value('app-colors').deep_unpack();
         this._appColors = new Map(
@@ -89,6 +98,8 @@ export default class PanelColorExtension extends Extension {
     }
 
     _update() {
+        this._cancelDetect();
+
         if (this._inOverview) {
             this._reset();
             return;
@@ -109,7 +120,76 @@ export default class PanelColorExtension extends Extension {
         }
 
         const match = names.find(n => this._appColors.has(n));
-        this._apply(match ? this._appColors.get(match) : this._defaultColor);
+        if (match) {
+            this._apply(this._appColors.get(match));
+            return;
+        }
+
+        if (this._autoDetect) {
+            this._detect(win);
+            return;
+        }
+
+        this._apply(this._defaultColor);
+    }
+
+    // Shows the colour detected last time for this window right away,
+    // then samples its title bar again once animations have settled.
+    _detect(win) {
+        const cached = this._detected.get(win);
+        if (cached)
+            this._apply(cached);
+
+        const gen = this._detectGen;
+        this._detectId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, DETECT_DELAY_MS, () => {
+            this._detectId = 0;
+            this._sample(win, gen).catch(e =>
+                console.warn(`panel-color: colour detection failed: ${e.message}`));
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    async _sample(win, gen) {
+        const samples = [];
+        for (const [x, y] of titleBarPoints(win.get_frame_rect()))
+            samples.push(await this._pickColor(x, y));
+
+        // Focus changed, settings changed or disabled while sampling
+        if (gen !== this._detectGen || !this._detected)
+            return;
+
+        const rgb = dominantColor(samples);
+        if (!rgb) {
+            this._apply(this._defaultColor);
+            return;
+        }
+        const color = `rgb(${rgb.join(', ')})`;
+        this._detected.set(win, color);
+        this._apply(color);
+    }
+
+    _pickColor(x, y) {
+        return new Promise(resolve => {
+            new Shell.Screenshot().pick_color(x, y, (shot, res) => {
+                try {
+                    // [ok, color] or [color] depending on the GJS version
+                    const c = [shot.pick_color_finish(res)].flat()
+                        .find(v => typeof v === 'object' && v && 'red' in v);
+                    resolve(c ? [c.red, c.green, c.blue] : null);
+                } catch {
+                    resolve(null); // e.g. point off screen
+                }
+            });
+        });
+    }
+
+    // Drops a pending detection and makes in-flight samples stale
+    _cancelDetect() {
+        if (this._detectId) {
+            GLib.source_remove(this._detectId);
+            this._detectId = 0;
+        }
+        this._detectGen++;
     }
 
     // Names a window can be matched by, lower-cased: its app id

@@ -72,11 +72,18 @@ export default class PanelColorPreferences extends ExtensionPreferences {
         settings.bind('opacity', opacity, 'value', Gio.SettingsBindFlags.DEFAULT);
         group.add(opacity);
 
+        const detect = new Adw.SwitchRow({
+            title: 'Detect colours automatically',
+            subtitle: "Read the colour of the window's title bar",
+        });
+        settings.bind('auto-detect', detect, 'active', Gio.SettingsBindFlags.DEFAULT);
+        group.add(detect);
+
         // Empty default-color means "keep the stock panel"
         const current = settings.get_string('default-color');
         const other = new Adw.SwitchRow({
-            title: 'Paint other apps',
-            subtitle: 'Use one colour for apps not in the list',
+            title: 'Fallback colour',
+            subtitle: 'When no colour is detected and the app is not in the list',
             active: current !== '',
         });
         const button = colorButton(current, hex => {
@@ -97,8 +104,8 @@ export default class PanelColorPreferences extends ExtensionPreferences {
 
     _appsGroup(settings, window) {
         const group = new Adw.PreferencesGroup({
-            title: 'Apps',
-            description: 'The panel takes this colour while the app is focused. ' +
+            title: 'Fixed Colours',
+            description: 'These apps always use their colour, without detection. ' +
                 'Firefox follows its tab bar instead when the Firefox add-on is installed.',
         });
 
