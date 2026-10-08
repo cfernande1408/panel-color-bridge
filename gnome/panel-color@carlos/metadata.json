@@ -3,5 +3,6 @@
   "name": "Panel Color",
   "description": "Colours the top panel to match the focused window (Firefox in real time, other apps per app).",
   "shell-version": ["45", "46", "47", "48", "49", "50"],
+  "settings-schema": "org.gnome.shell.extensions.panel-color",
   "version": 1
 }
