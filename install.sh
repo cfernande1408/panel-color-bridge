@@ -27,12 +27,19 @@ fi
 rm -rf "$EXT_DIR"
 mkdir -p "$EXT_DIR"
 cp -r "$DIR/gnome/$UUID/." "$EXT_DIR/"
-if [ -n "$backup" ]; then
-    cp "$backup" "$EXT_DIR/colors.json"
-    rm -f "$backup"
-    echo "  Kept your existing colors.json"
-fi
+glib-compile-schemas "$EXT_DIR/schemas"
 echo "  $EXT_DIR"
+
+# Settings used to live in colors.json; move them to GSettings once
+if [ -n "$backup" ]; then
+    SCHEMA=org.gnome.shell.extensions.panel-color
+    python3 "$DIR/tools/colors_json_to_gsettings.py" "$backup" |
+        while read -r key value; do
+            gsettings --schemadir "$EXT_DIR/schemas" set "$SCHEMA" "$key" "$value"
+        done
+    rm -f "$backup"
+    echo "  Moved your colors.json settings to GSettings"
+fi
 
 echo
 echo "Done. Log out and back in, then run:"

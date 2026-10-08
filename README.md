@@ -6,7 +6,7 @@ on Android:
 - **Firefox**: follows the tab bar colour in real time (works with
   [Adaptive Tab Bar Colour](https://addons.mozilla.org/firefox/addon/adaptive-tab-bar-colour/)
   or any theme).
-- **Other apps**: fixed colours per app, set in `colors.json`.
+- **Other apps**: fixed colours per app, stored in GSettings.
 - **No active window**: the panel goes back to its stock style, so it
   works alongside Blur my Shell.
 
@@ -43,22 +43,22 @@ Then install the `.xpi` from `web-ext-artifacts/` in Firefox.
 
 ## Per-app colours
 
-Edit `~/.local/share/gnome-shell/extensions/panel-color@carlos/colors.json`:
+Settings live in GSettings and apply immediately, no reload needed:
 
-    {
-      "opacity": 1,
-      "default": null,
-      "org.gnome.Ptyxis": "#1e1e1e"
-    }
+    S="--schemadir $HOME/.local/share/gnome-shell/extensions/panel-color@carlos/schemas"
+    gsettings $S set org.gnome.shell.extensions.panel-color app-colors \
+      "{'org.gnome.Ptyxis': '#1e1e1e', 'org.gnome.Nautilus': '#ebebed'}"
+    gsettings $S set org.gnome.shell.extensions.panel-color default-color ''
+    gsettings $S set org.gnome.shell.extensions.panel-color opacity 1.0
+
+An empty `default-color` keeps the stock panel for apps not in the list.
 
 To find an app's name, focus it and run:
 
     cat $XDG_RUNTIME_DIR/panel-color-focused
 
-Reload after editing:
-
-    gnome-extensions disable panel-color@carlos
-    gnome-extensions enable panel-color@carlos
+If you had a `colors.json` from an older version, `install.sh` moves
+it to GSettings for you.
 
 ## License
 

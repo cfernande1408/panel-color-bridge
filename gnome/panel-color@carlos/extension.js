@@ -8,9 +8,12 @@ import {parseColor, isLight} from './colorutil.js';
 
 export default class PanelColorExtension extends Extension {
     enable() {
-        this._colors = this._loadColors();
-        const op = Number(this._colors.opacity);
-        this._opacity = op >= 0 && op <= 1 ? op : 1;
+        this._settings = this.getSettings();
+        this._loadSettings();
+        this._settingsId = this._settings.connect('changed', () => {
+            this._loadSettings();
+            this._update();
+        });
         this._ffColor = null;
         this._inOverview = false;
         this._lastFocused = null;
@@ -43,6 +46,8 @@ export default class PanelColorExtension extends Extension {
     }
 
     disable() {
+        this._settings.disconnect(this._settingsId);
+        this._settings = null;
         global.display.disconnect(this._focusId);
         global.workspace_manager.disconnect(this._wsId);
         Main.overview.disconnect(this._ovShowId);
@@ -51,20 +56,18 @@ export default class PanelColorExtension extends Extension {
         this._monitor.cancel();
         this._monitor = null;
         this._colorFile = null;
-        this._colors = null;
+        this._appColors = null;
         this._reset();
         this._savedStyles = null;
     }
 
-    _loadColors() {
-        try {
-            const path = GLib.build_filenamev([this.path, 'colors.json']);
-            const [, bytes] = GLib.file_get_contents(path);
-            return JSON.parse(new TextDecoder().decode(bytes));
-        } catch (e) {
-            console.warn(`panel-color: invalid colors.json: ${e.message}`);
-            return {};
-        }
+    _loadSettings() {
+        this._opacity = this._settings.get_double('opacity');
+        this._defaultColor = this._settings.get_string('default-color');
+        // Lower-case keys so window class matching ignores case
+        const map = this._settings.get_value('app-colors').deep_unpack();
+        this._appColors = new Map(
+            Object.entries(map).map(([k, v]) => [k.toLowerCase(), v]));
     }
 
     _readBridge() {
@@ -107,16 +110,7 @@ export default class PanelColorExtension extends Extension {
             return;
         }
 
-        for (const [key, value] of Object.entries(this._colors)) {
-            if (key === 'default' || key === 'opacity')
-                continue;
-            if (key.toLowerCase() === cls.toLowerCase()) {
-                this._apply(value);
-                return;
-            }
-        }
-
-        this._apply(this._colors.default);
+        this._apply(this._appColors.get(cls.toLowerCase()) ?? this._defaultColor);
     }
 
     _activeWindow() {
