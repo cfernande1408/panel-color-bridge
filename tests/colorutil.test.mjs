@@ -2,7 +2,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 
-import {parseColor, isLight, titleBarPoints, dominantColor}
+import {parseColor, isLight, titleBarPoints, dominantColor, uncoveredPoints}
     from '../gnome/panel-color@carlos/colorutil.js';
 
 test('parseColor', () => {
@@ -48,4 +48,13 @@ test('dominantColor gives up when every sample differs', () => {
     assert.equal(dominantColor([[1, 1, 1], [2, 2, 2], [3, 3, 3]]), null);
     assert.equal(dominantColor([null, null]), null);
     assert.equal(dominantColor([]), null);
+});
+
+test('uncoveredPoints drops points under windows on top', () => {
+    const pts = [[10, 5], [50, 5], [90, 5]];
+    const terminal = {x: 40, y: 0, width: 20, height: 100};
+    assert.deepEqual(uncoveredPoints(pts, [terminal]), [[10, 5], [90, 5]]);
+    assert.deepEqual(uncoveredPoints(pts, []), pts);
+    // Edges: right and bottom edges are outside the rectangle
+    assert.deepEqual(uncoveredPoints([[60, 5], [40, 5]], [terminal]), [[60, 5]]);
 });

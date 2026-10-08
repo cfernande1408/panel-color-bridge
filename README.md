@@ -21,6 +21,8 @@ the focused window, once, 200 ms after it gets focus (so animations
 have finished). The colour seen most often wins; if every pixel is
 different (a gradient or an image), the fallback colour is used. It
 never samples continuously, so it costs nothing while you work.
+Points hidden by other windows are skipped, so a window on top is
+never mistaken for the one underneath.
 
 Firefox can change colour on every tab, which focus-time sampling
 would miss, so it reports its colour directly instead:
@@ -56,6 +58,10 @@ Open the preferences:
     gnome-extensions prefs panel-color@carlos
 
 - **Detect colours automatically**: reads each window's title bar.
+- **Only maximized windows**: follow the top window that touches the
+  panel (maximized or tiled) instead of the focused one, so a floating
+  window over a maximized browser leaves the panel alone. With nothing
+  maximized, the panel keeps its stock style.
 - **Fallback colour**: used when nothing is detected and the app has no
   fixed colour. When it is off, the panel keeps its stock style.
 - **Fixed colours**: add apps with the **+** button to always use your

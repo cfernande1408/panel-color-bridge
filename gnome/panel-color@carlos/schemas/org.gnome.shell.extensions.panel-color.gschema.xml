@@ -13,6 +13,11 @@
       <summary>Detect colours automatically</summary>
       <description>Read the colour of the focused window's title bar. Apps in app-colors override it.</description>
     </key>
+    <key name="maximized-only" type="b">
+      <default>false</default>
+      <summary>Only follow windows touching the panel</summary>
+      <description>Follow the top maximized or tiled window on the panel's monitor instead of the focused one. Floating windows leave the panel alone.</description>
+    </key>
     <key name="default-color" type="s">
       <default>''</default>
       <summary>Fallback colour</summary>
