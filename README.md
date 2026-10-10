@@ -36,20 +36,71 @@ would miss, so it reports its colour directly instead:
 
 ## Installation
 
+### Requirements
+
+- GNOME Shell 45–50
+- Firefox 142 or later, installed from your distribution's packages
+  (the Flatpak and Snap builds are not supported yet: their sandbox
+  does not see the native host)
+- `git`, `python3` and `glib-compile-schemas` (package `glib2` on
+  Fedora, `libglib2.0-bin` on Debian/Ubuntu)
+
+### 1. GNOME extension and native host
+
+    git clone https://github.com/cfernande1408/panel-color-bridge.git
+    cd panel-color-bridge
     ./install.sh
 
-Log out and back in, then:
+This installs:
+
+- the GNOME extension in
+  `~/.local/share/gnome-shell/extensions/panel-color@carlos/`
+- the native host in `~/.local/bin/panel-color-bridge.py`
+- its Firefox manifest in `~/.mozilla/native-messaging-hosts/`
+
+GNOME only loads new extensions at login, so log out and back in, then:
 
     gnome-extensions enable panel-color@carlos
 
-Firefox only installs signed extensions. Sign `firefox/` as an unlisted
-add-on with [web-ext](https://github.com/mozilla/web-ext):
+At this point the panel already follows every app except Firefox.
 
-    cd firefox
-    npx web-ext sign --channel=unlisted \
-      --api-key=$WEB_EXT_API_KEY --api-secret=$WEB_EXT_API_SECRET
+### 2. Firefox extension
 
-Then install the `.xpi` from `web-ext-artifacts/` in Firefox.
+Download `panel-color-bridge.xpi` from the
+[latest release](https://github.com/cfernande1408/panel-color-bridge/releases/latest)
+and open it in Firefox (drag it onto a window, or
+**about:addons → ⚙ → Install Add-on From File…**). Restart Firefox.
+
+### Check that it works
+
+Open a page in Firefox and run:
+
+    cat "$XDG_RUNTIME_DIR/panel-color-bridge/color"
+
+It should print the tab bar colour. If the file does not exist, Firefox
+cannot reach the native host: run `./install.sh` again and restart
+Firefox.
+
+## Updating
+
+    cd panel-color-bridge
+    git pull
+    ./install.sh
+
+Then log out and back in. Your settings are kept. If the release has a
+new `.xpi`, install it over the old one.
+
+## Uninstalling
+
+    gnome-extensions disable panel-color@carlos
+    gsettings --schemadir ~/.local/share/gnome-shell/extensions/panel-color@carlos/schemas \
+      reset-recursively org.gnome.shell.extensions.panel-color
+    rm -rf ~/.local/share/gnome-shell/extensions/panel-color@carlos
+    rm -f ~/.local/bin/panel-color-bridge.py
+    rm -f ~/.mozilla/native-messaging-hosts/panel_color_bridge.json \
+          ~/.config/mozilla/native-messaging-hosts/panel_color_bridge.json
+
+Then remove **Panel Color Bridge** from `about:addons` in Firefox.
 
 ## Per-app colours
 
@@ -75,9 +126,22 @@ falling back to the window class.
 If you had a `colors.json` from an older version, `install.sh` moves
 it to GSettings for you.
 
-## Tests
+## Development
+
+Run the tests with:
 
     node --test tests/*.test.mjs
+
+Firefox only installs signed extensions. To build the `.xpi` for a
+release, sign `firefox/` as an unlisted add-on with
+[web-ext](https://github.com/mozilla/web-ext):
+
+    cd firefox
+    npx web-ext sign --channel=unlisted \
+      --api-key=$WEB_EXT_API_KEY --api-secret=$WEB_EXT_API_SECRET
+
+The signed file lands in `firefox/web-ext-artifacts/`. Attach it to a
+GitHub release as `panel-color-bridge.xpi`.
 
 ## License
 
